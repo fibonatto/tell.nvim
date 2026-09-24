@@ -11,10 +11,13 @@ local function get_visual_selection()
 	return table.concat(lines, "\n"), finish
 end
 
-local function comment_output(output)
-	local commentstring = vim.bo.commentstring
+local function comment_output(bufnr, output)
+	local commentstring = vim.api.nvim_get_option_value("commentstring", {
+		buf = bufnr,
+	})
 
-	if not commentstring or commentstring == "" then
+	if not commentstring or not commentstring:find("%%s") then
+		vim.notify("tell.nvim: invalid commentstring: " .. vim.inspect(commentstring), vim.log.levels.WARN)
 		return output
 	end
 
@@ -65,7 +68,7 @@ function M.tell()
 				return
 			end
 
-			output = comment_output(output)
+			output = comment_output(bufnr, output)
 
 			local response = vim.split(output, "\n", {
 				plain = true,
