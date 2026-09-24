@@ -1,5 +1,40 @@
 local M = {}
 
+local fallback_comments = {
+	javascript = "// %s",
+	javascriptreact = "// %s",
+	typescript = "// %s",
+	typescriptreact = "// %s",
+	rust = "// %s",
+	c = "// %s",
+	cpp = "// %s",
+	java = "// %s",
+	go = "// %s",
+	swift = "// %s",
+	kotlin = "// %s",
+	zig = "// %s",
+	python = "# %s",
+	ruby = "# %s",
+	perl = "# %s",
+	bash = "# %s",
+	sh = "# %s",
+	zsh = "# %s",
+	fish = "# %s",
+	lua = "-- %s",
+	haskell = "-- %s",
+	sql = "-- %s",
+	vim = '" %s',
+	lisp = "; %s",
+	scheme = "; %s",
+	clojure = "; %s",
+	css = "/* %s */",
+	scss = "// %s",
+	less = "// %s",
+	html = "<!-- %s -->",
+	xml = "<!-- %s -->",
+	markdown = "<!-- %s -->",
+}
+
 local function get_visual_selection()
 	local start = vim.fn.getpos("v")
 	local finish = vim.fn.getpos(".")
@@ -11,13 +46,23 @@ local function get_visual_selection()
 	return table.concat(lines, "\n"), finish
 end
 
-local function comment_output(bufnr, output)
-	local commentstring = vim.api.nvim_get_option_value("commentstring", {
-		buf = bufnr,
-	})
+local function get_commentstring(bufnr)
+	local commentstring = vim.api.nvim_get_option_value("commentstring", { buf = bufnr })
 
-	if not commentstring or not commentstring:find("%%s") then
-		vim.notify("tell.nvim: invalid commentstring: " .. vim.inspect(commentstring), vim.log.levels.WARN)
+	if commentstring and commentstring:find("%%s") then
+		return commentstring
+	end
+
+	local filetype = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
+
+	return fallback_comments[filetype]
+end
+
+local function comment_output(bufnr, output)
+	local commentstring = get_commentstring(bufnr)
+
+	if not commentstring then
+		vim.notify("tell.nvim: no comment syntax for filetype", vim.log.levels.WARN)
 		return output
 	end
 
@@ -26,7 +71,11 @@ local function comment_output(bufnr, output)
 	})
 
 	for i, line in ipairs(lines) do
-		lines[i] = commentstring:format(line)
+		if line == "" then
+			lines[i] = commentstring:format("")
+		else
+			lines[i] = commentstring:format(line)
+		end
 	end
 
 	return table.concat(lines, "\n")
