@@ -8,13 +8,31 @@ local function get_visual_selection()
 		type = vim.fn.mode(),
 	})
 
-	return table.concat(lines, "\n"), start, finish
+	return table.concat(lines, "\n"), finish
+end
+
+local function comment_output(output)
+	local commentstring = vim.bo.commentstring
+
+	if not commentstring or commentstring == "" then
+		return output
+	end
+
+	local lines = vim.split(output, "\n", {
+		plain = true,
+	})
+
+	for i, line in ipairs(lines) do
+		lines[i] = commentstring:format(line)
+	end
+
+	return table.concat(lines, "\n")
 end
 
 function M.tell()
 	local bufnr = vim.api.nvim_get_current_buf()
 
-	local selection, start, finish = get_visual_selection()
+	local selection, finish = get_visual_selection()
 
 	if selection == "" then
 		vim.notify("tell.nvim: empty selection", vim.log.levels.WARN)
@@ -47,11 +65,12 @@ function M.tell()
 				return
 			end
 
+			output = comment_output(output)
+
 			local response = vim.split(output, "\n", {
 				plain = true,
 			})
 
-			-- Insert after the last selected line.
 			vim.api.nvim_buf_set_lines(bufnr, finish[2], finish[2], false, { "", unpack(response) })
 
 			vim.notify("tell.nvim: response inserted")
