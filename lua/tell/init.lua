@@ -69,7 +69,7 @@ function M.tell()
 end
 
 function M.setup()
-	vim.keymap.set("v", "%", M.tell, {
+	vim.keymap.set("x", "%", M.tell, {
 		silent = false,
 		desc = "Ask Tell about selection",
 	})
